@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo Virtual de Repuestos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .placeholder-img { background-color: #e5e7eb; display: flex; align-items: center; justify-content: center; color: #9ca3af; }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fa-solid fa-boxes-stacked text-blue-600 text-2xl mr-3"></i>
+                    <h1 class="text-xl font-bold text-gray-800">Catálogo de Repuestos</h1>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition shadow-sm">
+                        <i class="fa-solid fa-plus mr-2"></i>Nuevo
+                    </button>
+                    <button id="priorityBtn" onclick="togglePriorityMode()" class="bg-gray-100 hover:bg-red-100 text-gray-700 hover:text-red-600 px-4 py-2 rounded-md text-sm font-medium transition shadow-sm border border-gray-200">
+                        <i class="fa-solid fa-triangle-exclamation mr-2"></i>Prioridad
+                    </button>
+                    <button onclick="downloadData()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition shadow-sm">
+                        <i class="fa-solid fa-save mr-2"></i>Guardar Cambios
+                    </button>
+                    <button onclick="window.print()" class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition">
+                        <i class="fa-solid fa-print"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Search and Filter -->
+        <div class="mb-8 bg-white p-6 rounded-lg shadow-sm">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-search text-gray-400"></i>
+                    </div>
+                    <input type="text" id="searchInput" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Buscar repuesto o equipo...">
+                </div>
+                <div>
+                    <select id="categoryFilter" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                        <option value="all">Todos los Equipos</option>
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Total de Repuestos (Tipos)</dt>
+                    <dd class="mt-1 text-3xl font-semibold text-gray-900" id="totalTypes">0</dd>
+                </div>
+            </div>
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Total de Unidades</dt>
+                    <dd class="mt-1 text-3xl font-semibold text-gray-900" id="totalUnits">0</dd>
+                </div>
+            </div>
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Equipos Cubiertos</dt>
+                    <dd class="mt-1 text-3xl font-semibold text-gray-900" id="totalCategories">0</dd>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid -->
+        <div id="catalogGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Cards will be injected here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-12">
+            <i class="fa-solid fa-box-open text-gray-300 text-5xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900">No se encontraron resultados</h3>
+            <p class="mt-1 text-gray-500">Intenta ajustar tu búsqueda o filtro.</p>
+        </div>
+
+    </div>
+
+    <!-- Modal -->
+    <div id="itemModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeModal()"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modalTitle">Agregar Repuesto</h3>
+                            <div class="mt-4 space-y-4">
+                                <input type="hidden" id="itemId">
+                                <div>
+                                    <label for="itemEquipment" class="block text-sm font-medium text-gray-700">Equipo</label>
+                                    <input type="text" id="itemEquipment" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="itemPart" class="block text-sm font-medium text-gray-700">Nombre del Repuesto</label>
+                                    <input type="text" id="itemPart" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="itemQuantity" class="block text-sm font-medium text-gray-700">Cantidad</label>
+                                    <input type="number" id="itemQuantity" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Imagen</label>
+                                    <div class="mt-1 flex items-center">
+                                        <span class="inline-block h-12 w-12 rounded-md overflow-hidden bg-gray-100">
+                                            <img id="imagePreview" src="" class="h-full w-full object-cover hidden">
+                                            <svg id="imagePlaceholder" class="h-full w-full text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                                            </svg>
+                                        </span>
+                                        <label for="file-upload" class="ml-5 bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
+                                            <span>Subir archivo</span>
+                                            <input id="file-upload" name="file-upload" type="file" class="sr-only" accept="image/*" onchange="handleImageUpload(this)">
+                                        </label>
+                                        <input type="hidden" id="itemImage">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" onclick="saveItem()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Guardar
+                    </button>
+                    <button type="button" onclick="closeModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-sm text-gray-500">&copy; 2025 Catálogo de Repuestos Médicos y Estéticos.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Data extracted and normalized from provided documents
+        // Initial Data
+        let catalogData = [];
+
+        // Load Data
+        async function loadData() {
+            // Try to load from LocalStorage first
+            const localData = localStorage.getItem('catalogData');
+            
+            if (localData) {
+                catalogData = JSON.parse(localData);
+            } else {
+                // If no local data, fetch from JSON file
+                try {
+                    const response = await fetch('data.json');
+                    if (!response.ok) throw new Error('Failed to load data');
+                    catalogData = await response.json();
+                    // Save to local storage for future edits
+                    saveData();
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    // Fallback empty state or error message could go here
+                    catalogData = [];
+                }
+            }
+            
+            init();
+        }
+
+        // DOM Elements
+        const grid = document.getElementById('catalogGrid');
+        const searchInput = document.getElementById('searchInput');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const emptyState = document.getElementById('emptyState');
+        const totalTypesEl = document.getElementById('totalTypes');
+        const totalUnitsEl = document.getElementById('totalUnits');
+        const totalCategoriesEl = document.getElementById('totalCategories');
+
+        // Initialize
+        function init() {
+            populateCategories();
+            renderGrid(catalogData);
+            updateStats(catalogData);
+        }
+
+        function saveData() {
+            localStorage.setItem('catalogData', JSON.stringify(catalogData));
+        }
+
+        function downloadData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(catalogData, null, 4));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "data.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        // Priority Mode Logic
+        let isPriorityMode = false;
+
+        function togglePriorityMode() {
+            isPriorityMode = !isPriorityMode;
+            const btn = document.getElementById('priorityBtn');
+            
+            if (isPriorityMode) {
+                btn.classList.remove('bg-gray-100', 'text-gray-700');
+                btn.classList.add('bg-red-600', 'text-white', 'hover:bg-red-700', 'hover:text-white');
+                btn.innerHTML = '<i class="fa-solid fa-check mr-2"></i>Terminar Prioridad';
+                document.body.style.cursor = 'crosshair';
+            } else {
+                btn.classList.add('bg-gray-100', 'text-gray-700');
+                btn.classList.remove('bg-red-600', 'text-white', 'hover:bg-red-700', 'hover:text-white');
+                btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-2"></i>Prioridad';
+                document.body.style.cursor = 'default';
+            }
+        }
+
+        function toggleItemPriority(id) {
+            const index = catalogData.findIndex(i => i.id === id);
+            if (index !== -1) {
+                catalogData[index].priority = !catalogData[index].priority;
+                saveData();
+                filterData(); // Re-render
+            }
+        }
+
+        // Drag and Drop Logic
+        let draggedItemId = null;
+
+        function handleDragStart(e) {
+            const card = e.target.closest('.product-card');
+            draggedItemId = parseInt(card.dataset.id);
+            e.dataTransfer.effectAllowed = 'move';
+            card.classList.add('opacity-50');
+        }
+
+        function handleDragEnd(e) {
+            const card = e.target.closest('.product-card');
+            card.classList.remove('opacity-50');
+            
+            // Remove drag-over styles from all cards
+            document.querySelectorAll('.product-card').forEach(c => {
+                c.classList.remove('ring-2', 'ring-blue-500', 'scale-105');
+            });
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const card = e.target.closest('.product-card');
+            if (card && parseInt(card.dataset.id) !== draggedItemId) {
+                card.classList.add('ring-2', 'ring-blue-500', 'scale-105');
+            }
+        }
+
+        function handleDragLeave(e) {
+            const card = e.target.closest('.product-card');
+            if (card) {
+                card.classList.remove('ring-2', 'ring-blue-500', 'scale-105');
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const targetCard = e.target.closest('.product-card');
+            
+            if (targetCard) {
+                const targetId = parseInt(targetCard.dataset.id);
+
+                if (draggedItemId !== null && draggedItemId !== targetId) {
+                    // Find items in data
+                    const sourceItem = catalogData.find(i => i.id === draggedItemId);
+                    const targetItem = catalogData.find(i => i.id === targetId);
+
+                    // Swap images
+                    const tempImage = sourceItem.image;
+                    sourceItem.image = targetItem.image;
+                    targetItem.image = tempImage;
+
+                    // Re-render to reflect changes
+                    saveData();
+                    filterData();
+                }
+            }
+            draggedItemId = null;
+        }
+
+        // CRUD Operations
+        function openModal(id = null) {
+            const modal = document.getElementById('itemModal');
+            const title = document.getElementById('modalTitle');
+            const itemId = document.getElementById('itemId');
+            const equipment = document.getElementById('itemEquipment');
+            const part = document.getElementById('itemPart');
+            const quantity = document.getElementById('itemQuantity');
+            const imageInput = document.getElementById('itemImage');
+            const imagePreview = document.getElementById('imagePreview');
+            const imagePlaceholder = document.getElementById('imagePlaceholder');
+
+            if (id) {
+                const item = catalogData.find(i => i.id === id);
+                title.textContent = 'Editar Repuesto';
+                itemId.value = item.id;
+                equipment.value = item.equipment;
+                part.value = item.part;
+                quantity.value = item.quantity;
+                imageInput.value = item.image || '';
+                
+                if (item.image) {
+                    imagePreview.src = item.image;
+                    imagePreview.classList.remove('hidden');
+                    imagePlaceholder.classList.add('hidden');
+                } else {
+                    imagePreview.classList.add('hidden');
+                    imagePlaceholder.classList.remove('hidden');
+                }
+            } else {
+                title.textContent = 'Agregar Repuesto';
+                itemId.value = '';
+                equipment.value = '';
+                part.value = '';
+                quantity.value = '';
+                imageInput.value = '';
+                imagePreview.classList.add('hidden');
+                imagePlaceholder.classList.remove('hidden');
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('itemModal').classList.add('hidden');
+        }
+
+        function handleImageUpload(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('imagePreview').src = e.target.result;
+                    document.getElementById('imagePreview').classList.remove('hidden');
+                    document.getElementById('imagePlaceholder').classList.add('hidden');
+                    document.getElementById('itemImage').value = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function saveItem() {
+            const id = document.getElementById('itemId').value;
+            const equipment = document.getElementById('itemEquipment').value;
+            const part = document.getElementById('itemPart').value;
+            const quantity = parseInt(document.getElementById('itemQuantity').value);
+            const image = document.getElementById('itemImage').value;
+
+            if (!equipment || !part || isNaN(quantity)) {
+                alert('Por favor complete todos los campos requeridos');
+                return;
+            }
+
+            if (id) {
+                // Edit
+                const index = catalogData.findIndex(i => i.id == id);
+                if (index !== -1) {
+                    catalogData[index] = { ...catalogData[index], equipment, part, quantity, image };
+                }
+            } else {
+                // Create
+                const newItem = {
+                    id: Date.now(),
+                    equipment,
+                    part,
+                    quantity,
+                    image,
+                    source: 'User'
+                };
+                catalogData.push(newItem);
+            }
+
+            saveData();
+            closeModal();
+            
+            // Refresh UI
+            populateCategories(); // In case of new category
+            filterData();
+            updateStats(catalogData);
+        }
+
+        function deleteItem(id) {
+            if (confirm('¿Está seguro de eliminar este repuesto?')) {
+                catalogData = catalogData.filter(i => i.id !== id);
+                saveData();
+                filterData();
+                updateStats(catalogData);
+            }
+        }
+
+        // Populate Category Filter
+        function populateCategories() {
+            const categories = [...new Set(catalogData.map(item => item.equipment))].sort();
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                categoryFilter.appendChild(option);
+            });
+        }
+
+        // Render Grid
+        function renderGrid(data) {
+            grid.innerHTML = '';
+            
+            if (data.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            data.forEach(item => {
+                const card = document.createElement('div');
+                
+                // Dynamic classes for priority
+                let cardClasses = 'product-card rounded-lg shadow-sm overflow-hidden border transition duration-300 flex flex-col cursor-move relative ';
+                if (item.priority) {
+                    cardClasses += 'bg-red-50 border-red-500 ring-2 ring-red-500 shadow-md transform scale-[1.02] ';
+                } else {
+                    cardClasses += 'bg-white border-gray-200 card-hover ';
+                }
+                
+                card.className = cardClasses;
+                card.dataset.id = item.id;
+                card.draggable = !isPriorityMode; // Disable drag in priority mode
+                
+                // Click handler for priority mode
+                card.onclick = (e) => {
+                    if (isPriorityMode) {
+                        e.preventDefault();
+                        toggleItemPriority(item.id);
+                    }
+                };
+                
+                // Add Drag Events (only if not in priority mode)
+                if (!isPriorityMode) {
+                    card.addEventListener('dragstart', handleDragStart);
+                    card.addEventListener('dragend', handleDragEnd);
+                    card.addEventListener('dragover', handleDragOver);
+                    card.addEventListener('dragleave', handleDragLeave);
+                    card.addEventListener('drop', handleDrop);
+                }
+                
+                const imageHtml = item.image
+                    ? `<img src="${item.image}" alt="${item.part}" class="w-full h-full object-contain bg-gray-50 pointer-events-none">`
+                    : `<div class="h-full w-full flex items-center justify-center bg-gray-200 text-gray-400 pointer-events-none">
+                           <i class="fa-solid fa-image text-4xl"></i>
+                       </div>`;
+
+                card.innerHTML = `
+                    <div class="h-48 placeholder-img relative group overflow-hidden">
+                        ${imageHtml}
+                        ${item.priority ? '<div class="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded shadow animate-pulse">PRIORIDAD</div>' : ''}
+                        
+                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition duration-300 flex items-center justify-center space-x-2 opacity-0 group-hover:opacity-100">
+                            <button onclick="event.stopPropagation(); openModal(${item.id})" class="bg-white text-gray-800 p-2 rounded-full hover:bg-blue-500 hover:text-white transition shadow-lg" title="Editar">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); deleteItem(${item.id})" class="bg-white text-gray-800 p-2 rounded-full hover:bg-red-500 hover:text-white transition shadow-lg" title="Eliminar">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-5 flex-1 flex flex-col">
+                        <div class="mb-2">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${item.priority ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}">
+                                ${item.equipment}
+                            </span>
+                        </div>
+                        <h3 class="text-lg font-bold ${item.priority ? 'text-red-700' : 'text-gray-900'} mb-2 leading-tight">${item.part}</h3>
+                        <div class="mt-auto pt-4 flex items-center justify-between border-t border-gray-100">
+                            <div class="flex items-center text-gray-500 text-sm">
+                                <i class="fa-solid fa-cubes mr-2"></i>
+                                <span>Stock:</span>
+                            </div>
+                            <span class="text-xl font-bold text-blue-600">${item.quantity}</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Update Stats
+        function updateStats(data) {
+            totalTypesEl.textContent = data.length;
+            totalUnitsEl.textContent = data.reduce((sum, item) => sum + item.quantity, 0);
+            const uniqueCategories = new Set(data.map(item => item.equipment));
+            totalCategoriesEl.textContent = uniqueCategories.size;
+        }
+
+        // Filter Logic
+        function filterData() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedCategory = categoryFilter.value;
+
+            const filtered = catalogData.filter(item => {
+                const matchesSearch = item.part.toLowerCase().includes(searchTerm) || 
+                                      item.equipment.toLowerCase().includes(searchTerm);
+                const matchesCategory = selectedCategory === 'all' || item.equipment === selectedCategory;
+                return matchesSearch && matchesCategory;
+            });
+
+            renderGrid(filtered);
+        }
+
+        // Event Listeners
+        searchInput.addEventListener('input', filterData);
+        categoryFilter.addEventListener('change', filterData);
+
+        // Start
+        loadData();
+
+    </script>
+</body>
+</html>
