@@ -23,28 +23,59 @@
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
                     <i class="fa-solid fa-boxes-stacked text-blue-600 text-2xl mr-3"></i>
-                    <h1 class="text-xl font-bold text-gray-800">Catálogo de Repuestos</h1>
+                    <h1 class="text-xl font-bold text-gray-800 hidden sm:block">Catálogo de Repuestos</h1>
+                    <h1 class="text-lg font-bold text-gray-800 sm:hidden">Catálogo</h1>
                 </div>
-                <div class="flex items-center space-x-2">
-                    <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition shadow-sm">
-                        <i class="fa-solid fa-plus mr-2"></i>Nuevo
+                
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center space-x-2">
+                    <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm font-medium transition shadow-sm flex items-center">
+                        <i class="fa-solid fa-plus mr-1"></i>Nuevo
                     </button>
-                    <button id="priorityBtn" onclick="togglePriorityMode()" class="bg-gray-100 hover:bg-red-100 text-gray-700 hover:text-red-600 px-4 py-2 rounded-md text-sm font-medium transition shadow-sm border border-gray-200">
-                        <i class="fa-solid fa-triangle-exclamation mr-2"></i>Prioridad
+                    <button id="priorityBtn" onclick="togglePriorityMode()" class="bg-gray-100 hover:bg-red-100 text-gray-700 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium transition shadow-sm border border-gray-200 flex items-center">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>Prioridad
                     </button>
-                    <button onclick="downloadData()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition shadow-sm">
-                        <i class="fa-solid fa-save mr-2"></i>Guardar JSON
+                    <button onclick="downloadData()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm font-medium transition shadow-sm flex items-center">
+                        <i class="fa-solid fa-save mr-1"></i>JSON
                     </button>
-                    <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium transition shadow-sm">
-                        <i class="fa-solid fa-file-excel mr-2"></i>Excel
+                    <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-md text-sm font-medium transition shadow-sm flex items-center">
+                        <i class="fa-solid fa-file-excel mr-1"></i>Excel
                     </button>
-                    <button onclick="forceUpdate()" class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition" title="Actualizar Datos">
+                    <button onclick="forceUpdate()" class="text-gray-600 hover:text-blue-600 px-2 py-2 rounded-md text-sm font-medium transition" title="Actualizar Datos">
                         <i class="fa-solid fa-sync"></i>
                     </button>
-                    <button onclick="window.print()" class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition">
+                    <button onclick="window.print()" class="text-gray-600 hover:text-blue-600 px-2 py-2 rounded-md text-sm font-medium transition">
                         <i class="fa-solid fa-print"></i>
                     </button>
                 </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="flex items-center md:hidden">
+                    <button onclick="document.getElementById('mobileMenu').classList.toggle('hidden')" class="text-gray-600 hover:text-blue-600 p-2">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobileMenu" class="hidden md:hidden bg-white border-t border-gray-100">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <button onclick="openModal(); document.getElementById('mobileMenu').classList.add('hidden')" class="w-full text-left bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fa-solid fa-plus mr-2"></i>Nuevo Repuesto
+                </button>
+                <button onclick="togglePriorityMode(); document.getElementById('mobileMenu').classList.add('hidden')" class="w-full text-left text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fa-solid fa-triangle-exclamation mr-2"></i>Modo Prioridad
+                </button>
+                <button onclick="downloadData(); document.getElementById('mobileMenu').classList.add('hidden')" class="w-full text-left text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fa-solid fa-save mr-2"></i>Guardar JSON
+                </button>
+                <button onclick="exportToExcel(); document.getElementById('mobileMenu').classList.add('hidden')" class="w-full text-left text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fa-solid fa-file-excel mr-2"></i>Exportar Excel
+                </button>
+                <button onclick="forceUpdate(); document.getElementById('mobileMenu').classList.add('hidden')" class="w-full text-left text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fa-solid fa-sync mr-2"></i>Actualizar Datos
+                </button>
             </div>
         </div>
     </nav>
@@ -93,7 +124,7 @@
         </div>
 
         <!-- Grid -->
-        <div id="catalogGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div id="catalogGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             <!-- Cards will be injected here -->
         </div>
 
