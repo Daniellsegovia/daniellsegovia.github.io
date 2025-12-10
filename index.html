@@ -180,7 +180,8 @@
             } else {
                 // If no local data, fetch from JSON file
                 try {
-                    const response = await fetch('data.json');
+                    // Add timestamp to prevent caching
+                    const response = await fetch('data.json?t=' + new Date().getTime());
                     if (!response.ok) throw new Error('Failed to load data');
                     catalogData = await response.json();
                     // Save to local storage for future edits
