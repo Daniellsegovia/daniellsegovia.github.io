@@ -1,4 +1,4 @@
-# Guía Completa: Cómo Publicar y Actualizar tu Catálogo en Internet (Gratis)
+?# Guía Completa: Cómo Publicar y Actualizar tu Catálogo en Internet (Gratis)
 
 Esta guía te enseñará cómo poner tu catálogo en internet usando **GitHub Pages** para que cualquier persona pueda verlo desde su celular o computadora. También aprenderás el "ciclo de actualización" para mantenerlo al día.
 

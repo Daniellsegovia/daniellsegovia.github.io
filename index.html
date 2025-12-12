@@ -208,54 +208,44 @@
         let catalogData = [];
         const APP_VERSION = '1.1'; // Increment this to force update for everyone
 
-        // Load Data
+        // Cargar Datos (Corregido)
         async function loadData() {
             try {
-                // Check version first
+                // 1. Revisar versión
                 const localVersion = localStorage.getItem('appVersion');
                 if (localVersion !== APP_VERSION) {
-                    console.log("New version detected. Clearing local cache.");
+                    console.log("Nueva versión detectada. Limpiando caché.");
                     localStorage.removeItem('catalogData');
                     localStorage.setItem('appVersion', APP_VERSION);
                 }
 
                 document.getElementById('versionDisplay').textContent = `v${APP_VERSION}`;
 
-                // Always try to fetch the latest data from the server first
-                const response = await fetch('data.json?t=' + new Date().getTime(), { cache: "no-store" });
-                
-                if (response.ok) {
-                    const serverData = await response.json();
-                    
-                    // Strategy: Always prioritize Server Data on load to ensure updates are seen
-                    // This overwrites local unsaved changes if the page is reloaded,
-                    // which is the expected behavior for a "published" catalog.
-                    console.log("Syncing with server data...");
-                    catalogData = serverData;
-                    saveData(); // Update local storage with server data
-                } else {
-                    throw new Error('Failed to load server data');
-                }
-            } catch (error) {
-                console.warn('Could not load from server, falling back to local storage:', error);
-                // Fallback to local storage if server fetch fails (offline or error)
+                // 2. INTENTAR CARGAR DE MEMORIA LOCAL PRIMERO (Esto arregla tu problema)
                 const localData = localStorage.getItem('catalogData');
+                
                 if (localData) {
+                    console.log("Cargando datos locales...");
                     catalogData = JSON.parse(localData);
                 } else {
-                    catalogData = [];
+                    // 3. Solo si no hay datos locales, buscamos el archivo data.json
+                    console.log("No hay datos locales, buscando en el servidor...");
+                    const response = await fetch('data.json?t=' + new Date().getTime(), { cache: "no-store" });
+                    
+                    if (response.ok) {
+                        const serverData = await response.json();
+                        catalogData = serverData;
+                        saveData(); 
+                    } else {
+                        throw new Error('No se pudo cargar data.json'); // Iniciar vacío si falla
+                    }
                 }
+            } catch (error) {
+                console.warn('Error al cargar datos:', error);
+                catalogData = [];
             }
             
             init();
-        }
-
-        async function forceUpdate() {
-            if(confirm("Esto recargará los datos desde el servidor y borrará cambios locales no guardados en el archivo JSON. ¿Continuar?")) {
-                localStorage.removeItem('catalogData');
-                await loadData();
-                alert("Datos actualizados.");
-            }
         }
 
         // DOM Elements
