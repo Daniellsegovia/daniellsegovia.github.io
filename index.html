@@ -208,43 +208,60 @@
         let catalogData = [];
         const APP_VERSION = '1.1'; // Increment this to force update for everyone
 
-        // Cargar Datos (Corregido)
+        // Cargar Datos (Versión Híbrida Inteligente)
         async function loadData() {
+            let serverData = [];
+            let localData = [];
+            
+            // 1. Intentar obtener datos locales
+            const localString = localStorage.getItem('catalogData');
+            if (localString) {
+                localData = JSON.parse(localString);
+            }
+
+            // 2. Intentar descargar de GitHub/Servidor
             try {
-                // 1. Revisar versión
-                const localVersion = localStorage.getItem('appVersion');
-                if (localVersion !== APP_VERSION) {
-                    console.log("Nueva versión detectada. Limpiando caché.");
-                    localStorage.removeItem('catalogData');
-                    localStorage.setItem('appVersion', APP_VERSION);
+                // El ?t=... evita que el navegador use caché viejo
+                const response = await fetch('data.json?t=' + new Date().getTime()); 
+                if (response.ok) {
+                    serverData = await response.json();
                 }
+            } catch (e) {
+                console.warn("No se pudo conectar con el servidor o estás offline.");
+            }
 
-                document.getElementById('versionDisplay').textContent = `v${APP_VERSION}`;
-
-                // 2. INTENTAR CARGAR DE MEMORIA LOCAL PRIMERO (Esto arregla tu problema)
-                const localData = localStorage.getItem('catalogData');
-                
-                if (localData) {
-                    console.log("Cargando datos locales...");
-                    catalogData = JSON.parse(localData);
+            // 3. Comparar y Decidir
+            if (serverData.length > 0) {
+                if (localData.length === 0) {
+                    // Caso A: No tienes nada guardado localmente -> Cargar GitHub directo
+                    console.log("Carga inicial desde servidor");
+                    catalogData = serverData;
+                    saveData();
                 } else {
-                    // 3. Solo si no hay datos locales, buscamos el archivo data.json
-                    console.log("No hay datos locales, buscando en el servidor...");
-                    const response = await fetch('data.json?t=' + new Date().getTime(), { cache: "no-store" });
-                    
-                    if (response.ok) {
-                        const serverData = await response.json();
-                        catalogData = serverData;
-                        saveData(); 
+                    // Caso B: Tienes datos locales. ¿Son idénticos a GitHub?
+                    const serverStr = JSON.stringify(serverData);
+                    const localStr = JSON.stringify(localData);
+
+                    if (serverStr === localStr) {
+                        // Son iguales, no molestamos al usuario
+                        catalogData = localData;
                     } else {
-                        throw new Error('No se pudo cargar data.json'); // Iniciar vacío si falla
+                        // Caso C: ¡DIFERENCIAS DETECTADAS!
+                        // Preguntamos al usuario qué prefiere
+                        if (confirm("📢 ACTUAlIZACIÓN DISPONIBLE\n\nHay una nueva versión de datos en GitHub.\n\n[ACEPTAR] = Cargar datos nuevos de GitHub (Borra cambios locales no guardados).\n[CANCELAR] = Seguir viendo mi versión local.")) {
+                            catalogData = serverData;
+                            saveData(); // Actualizamos lo local con lo nuevo
+                        } else {
+                            catalogData = localData; // Mantenemos lo viejo/editado
+                        }
                     }
                 }
-            } catch (error) {
-                console.warn('Error al cargar datos:', error);
-                catalogData = [];
+            } else {
+                // Si falló la conexión, usamos lo local
+                catalogData = localData;
             }
-            
+
+            // Iniciar la app
             init();
         }
 
